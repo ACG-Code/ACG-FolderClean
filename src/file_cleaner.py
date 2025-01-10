@@ -1,7 +1,5 @@
 import os
-import json
 import glob
-from re import I
 from docopt import docopt
 from datetime import datetime, timedelta
 
