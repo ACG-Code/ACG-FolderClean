@@ -5,9 +5,6 @@ from re import I
 from docopt import docopt
 from datetime import datetime, timedelta
 
-# TODO: Replace this import with one relevant to client
-from tm1py_config_connect import ConfigConnector
-
 usage = """
 file_cleaner.py
 Run this with a chore every hour.
