@@ -23,6 +23,6 @@ Examples:\
   file_cleaner.py -d C:\Users\John\Documents\ --r *.csv -t 1
 
 ## Logging File Locations
--Linux: /home/\<username\>/.FileCleaner/
+-Linux: /home/\<username\>/.FileCleaner/\
 -Windows: C:\Users\\<username\>\AppData\Roaming\FileCleaner\
 -MacOs: /Users/\<username\>/Library/Logs/FileCleaner/
