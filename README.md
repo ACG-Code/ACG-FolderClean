@@ -1,6 +1,6 @@
 # ACG_FileCleaner
 
-Copyright &copy 2025 Application Consulting Group, Inc.
+Copyright © 2025 Application Consulting Group, Inc.
 
 A tool that cleans out a directory based on file type and time since creation.
 
