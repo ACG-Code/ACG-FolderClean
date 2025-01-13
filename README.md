@@ -7,18 +7,18 @@ A tool that cleans out a directory based on file type and time since creation.
 *: All.\
 **: All recursive.
 
-### Usage:\
+#### Usage:
   file_cleaner.py --directory <directory> --regex <regex> --time <time>\
   file_cleaner.py -d <directory> -r <regex> -t <time>\
   file_cleaner.py (-h | --help)
   
-### Options:\
+#### Options:
   --directory -d        The path to the directory.\
   --regex -r            The regular expresion to filter files.\
   --time -t             Time in number of days.\
   -h --help             Display help.
   
-### Examples:\
+#### Examples:
   file_cleaner.py --directory C:\Users\John\Documents\ --regex **/*.txt --time 5\
   file_cleaner.py -d C:\Users\John\Documents\ --r *.csv -t 1
 
