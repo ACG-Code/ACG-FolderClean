@@ -2,7 +2,7 @@
 
 Copyright © 2025 Application Consulting Group, Inc.
 
-A tool that cleans out a directory based on file type and time since creation.
+A tool that removes files filtered by a regular expression and time since creation.
 
 *: All.\
 **: All recursive.
