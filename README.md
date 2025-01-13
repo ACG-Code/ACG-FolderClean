@@ -24,5 +24,5 @@ Examples:\
 
 ## Logging File Locations
 -Linux: /home/\<username\>/.FileCleaner/\
--Windows: C:\Users\\<username\>\AppData\Roaming\FileCleaner\\
+-Windows: C:\Users\\<username\>\AppData\Roaming\FileCleaner\\<br>
 -MacOs: /Users/\<username\>/Library/Logs/FileCleaner/
