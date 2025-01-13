@@ -2,3 +2,5 @@
 /env/
 .vs/
 *.pyproj
+/build/
+*.spec

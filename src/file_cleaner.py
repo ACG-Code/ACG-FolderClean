@@ -7,15 +7,15 @@ from tkinter import CURRENT
 from docopt import docopt
 from datetime import datetime, timedelta
 
-usage = r"""
-file_cleaner.py
+usage = """
+file_cleaner
 
 Copyright \u00A9 2025 Application Consulting Group, Inc.
 
 A tool that removes files filtered by a regular expression and time since creation.
 
-*: All.
-**: All recursive.
+*: All files deleted in a directory.
+**: All files recursively deleted; directories and subdirectories.
 
 Usage:
   file_cleaner.py --directory <directory> --regex <regex> --time <time>
@@ -29,8 +29,8 @@ Options:
   -h --help             Display help.
   
 Examples:
-  file_cleaner.py --directory C:\Users\John\Documents\ --regex **\*.txt --time 5
-  file_cleaner.py -d C:\Users\John\Documents\ --r *.csv -t 1
+  file_cleaner --directory C:\\Users\\John\\Documents\\ --regex **\*.txt --time 5
+  file_cleaner -d C:\\Users\\John\\Documents\\ --r *.csv -t 1
 """
 
 def is_last_day_of_month(datetime):
@@ -90,13 +90,11 @@ for file in matching_files:
     mtime = os.path.getmtime(file)
     creation_datetime = datetime.fromtimestamp(mtime)
     delta_time = current_datetime - creation_datetime
-
+    
     if check_is_last_of_month and is_last_day_of_month(creation_datetime):
         month_number = creation_datetime.month
         month_name = calendar.month_name[month_number]
-        message = f"Skipped file made at the end of {month_name} - {file}"
-        print(message)
-        logger.info(message)
+        logger.info(f"Skipped file made at the end of {month_name} - {file}")
         continue
 
     if days >= abs(delta_time.days):

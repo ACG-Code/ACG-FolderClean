@@ -4,13 +4,13 @@ Copyright © 2025 Application Consulting Group, Inc.
 
 A tool that removes files filtered by a regular expression and time since creation.
 
-*: All.\
-**: All recursive.
+*: All files deleted in a directory.\
+**: All files recursively deleted; directories and subdirectories.
 
 #### Usage:
-  file_cleaner.py --directory <directory> --regex <regex> --time <time>\
-  file_cleaner.py -d <directory> -r <regex> -t <time>\
-  file_cleaner.py (-h | --help)
+  file_cleaner --directory <directory> --regex <regex> --time <time>\
+  file_cleaner -d <directory> -r <regex> -t <time>\
+  file_cleaner (-h | --help)
   
 #### Options:
   --directory -d        The path to the directory.\
@@ -19,8 +19,8 @@ A tool that removes files filtered by a regular expression and time since creati
   -h --help             Display help.
   
 #### Examples:
-  file_cleaner.py --directory C:\Users\John\Documents\ --regex **/*.txt --time 5\
-  file_cleaner.py -d C:\Users\John\Documents\ --r *.csv -t 1
+  file_cleaner --directory C:\Users\John\Documents\ --regex **/*.txt --time 5\
+  file_cleaner -d C:\Users\John\Documents\ --r *.csv -t 1
 
 ## Logging File Locations
 -Linux: /home/\<username\>/.FileCleaner/\
