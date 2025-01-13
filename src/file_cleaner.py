@@ -18,19 +18,19 @@ A tool that removes files filtered by a regular expression and time since creati
 **: All files recursively deleted; directories and subdirectories.
 
 Usage:
-  file_cleaner.py --directory <directory> --regex <regex> --time <time>
-  file_cleaner.py -d <directory> -r <regex> -t <time>
+  file_cleaner.py --regex <regex> --time <time> [--exclude-month-end | -e]
+  file_cleaner.py -r <regex> -t <time> [--exclude-month-end | -e]
   file_cleaner.py (-h | --help)
   
 Options: 
-  --directory -d        The path to the directory.
-  --regex -r            The regular expresion to filter files.
-  --time -t             Time in number of days.
-  -h --help             Display help.
+  --regex -r                 The regular expresion to filter files.
+  --time, -t                 Time in number of days.
+  --exclude-month-end, -e   Exclude files created on the last day of a month from deletion.
+  -h --help                  Display help.
   
 Examples:
   file_cleaner --directory C:\\Users\\John\\Documents\\ --regex **\*.txt --time 5
-  file_cleaner -d C:\\Users\\John\\Documents\\ --r *.csv -t 1
+  file_cleaner -d C:\\Users\\John\\Documents\\ --r *.csv -t 1 -e
 """
 
 def is_last_day_of_month(datetime):
@@ -50,12 +50,11 @@ def logging_file_directory():
 
 arguments = docopt(usage)
 
-directory = arguments['<directory>']
 regex = arguments['<regex>']
 days = float(arguments['<time>'])
+check_is_last_of_month = arguments['--exclude-month-end'] or arguments['-e']
 
-if not os.path.exists(directory):
-    raise FileNotFoundError()
+print(f"Exclude month end was {check_is_last_of_month}")
 
 current_datetime = datetime.now()
 year = current_datetime.year
@@ -79,11 +78,7 @@ console_handler = logging.StreamHandler()
 logger = logging.getLogger()
 logger.addHandler(console_handler)
 
-# TODO: Decision, make this an option above?
-check_is_last_of_month = True
-
-full_regex = os.path.join(directory, regex)
-matching_files = glob.glob(full_regex, recursive = True)
+matching_files = glob.glob(regex, recursive = True)
 delete_count = 0
 
 for file in matching_files:
@@ -110,8 +105,8 @@ for file in matching_files:
             logger.error(f"Failed to delete {file}")
 
 if delete_count == 0:
-    logger.info(f"No files were created within {days} days matching the regular expression: {full_regex}")
+    logger.info(f"No files were created within {days} days matching the regular expression: {regex}")
 else:
-    logger.info(f"{delete_count} files deleted, created within {days} days, matching the regular expression: {full_regex}")
+    logger.info(f"{delete_count} files deleted, created within {days} days, matching the regular expression: {regex}")
     
 print (f"Log file path: {logging_filename}")
