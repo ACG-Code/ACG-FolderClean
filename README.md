@@ -1,28 +1,24 @@
 # ACG_FileCleaner
 
-Copyright © 2025 Application Consulting Group, Inc.
+Copyright Â© 2025 Application Consulting Group, Inc.
 
 A tool that removes files filtered by a regular expression and time since creation.
 
 *: All files deleted in a directory.\
-**: All files recursively deleted; directories and subdirectories.
+**: All files recursively deleted; directories and subdirectories.`
 
-#### Usage:
-  file_cleaner --directory <directory> --regex <regex> --time <time>\
-  file_cleaner -d <directory> -r <regex> -t <time>\
-  file_cleaner (-h | --help)
+## Usage:
+  `ACG-FolderClean <expression> <age> [options]`\
+  `ACG-FolderClean (-h | --version)`
   
-#### Options:
-  --directory -d        The path to the directory.\
-  --regex -r            The regular expresion to filter files.\
-  --time -t             Time in number of days.\
-  -h --help             Display help.
+## Options:
+  `<expression>`        The path to the directory.\
+   `<age>`              Age in days to keep files.\
+  `-h --help`           Display this screen.\
+  `--version `          Display version information.
   
-#### Examples:
-  file_cleaner --directory C:\Users\John\Documents\ --regex **/*.txt --time 5\
-  file_cleaner -d C:\Users\John\Documents\ --r *.csv -t 1
-
-## Logging File Locations
--Linux: /home/\<username\>/.FileCleaner/\
--Windows: C:\Users\\<username\>\AppData\Roaming\FileCleaner\\<br>
--MacOs: /Users/\<username\>/Library/Logs/FileCleaner/
+## Examples:
+`ACG-FolderClean "C:\Users\John\Documents\*"  5`  Delete all file in the directory older than 5 days.\
+`ACG-FolderClean "C:\Users\John\Documents\**"  5`  Delete all files in the directory and subdirectories older than 5 days.\
+`ACG-FolderClean "C:\Users\John\Documents\File*"  5` Delete all files in the directory that match the expression (File*) older than 5 days.\
+`ACG-FolderClean "C:\Users\John\Documents\File**"  5` Delete all files in the directory and subdirectories that match the expression (File*) older than 5 days.

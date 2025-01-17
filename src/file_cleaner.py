@@ -1,112 +1,123 @@
-import os
-import glob
-import logging
-import calendar
-import platform
-from tkinter import CURRENT
-from docopt import docopt
-from datetime import datetime, timedelta
-
-usage = """
-file_cleaner
-
-Copyright \u00A9 2025 Application Consulting Group, Inc.
-
+"""
 A tool that removes files filtered by a regular expression and time since creation.
 
 *: All files deleted in a directory.
 **: All files recursively deleted; directories and subdirectories.
 
 Usage:
-  file_cleaner.py --regex <regex> --time <time> [--exclude-month-end | -e]
-  file_cleaner.py -r <regex> -t <time> [--exclude-month-end | -e]
-  file_cleaner.py (-h | --help)
-  
-Options: 
-  --regex -r                 The regular expresion to filter files.
-  --time, -t                 Time in number of days.
-  --exclude-month-end, -e   Exclude files created on the last day of a month from deletion.
-  -h --help                  Display help.
-  
-Examples:
-  file_cleaner --directory C:\\Users\\John\\Documents\\ --regex **\*.txt --time 5
-  file_cleaner -d C:\\Users\\John\\Documents\\ --r *.csv -t 1 -e
+    ACG-FolderClean <expression> <age> [options]
+    ACG-FolderClean (-h | --version)
+
+Positional Arguments:
+    <expression>                Directory to search for files.
+    <age>                      Age in number of days.
+
+Options:
+    -e                          Exclude files created on the last day of a month from deletion.
+    -h                          Display this screen.
+    --version                   Show version information.
+
+Copyright © 2025 Application Consulting Group, Inc.
 """
 
-def is_last_day_of_month(datetime):
-    last_day = calendar.monthrange(datetime.year, datetime.month)
-    return datetime.day == last_day
+import calendar
+import logging
+import os
+import sys
+import time
+from datetime import datetime, timedelta
+from glob import glob
+from pathlib import Path
 
-def logging_file_directory():
-    if platform.system() == 'Linux':  
-        log_path = os.path.join(os.path.expanduser('~'), '.FileCleaner')
-    elif platform.system() == 'Windows':
-        log_path = os.path.join(os.environ['APPDATA'], 'FileCleaner')
+from docopt import docopt
+
+APP_NAME = 'ACG-FolderClean'
+APP_VERSION = '1.0.0'
+APP_YEAR = '2025'
+APP_COPYRIGHT = f'Copyright © {APP_YEAR} Application Consulting Group, Inc.'
+APP_HELP = f'{APP_NAME}\nVersion: {APP_VERSION}\n{APP_COPYRIGHT}'
+LOG_FILE = APP_NAME + '.log'
+APP_PATH = ''
+
+
+def set_current_directory() -> None:
+    global LOG_FILE
+    global APP_PATH
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
     else:
-        log_path = os.path.join(os.path.expanduser('~'), 'Library', 'Logs', 'FileCleaner')
-    
-    os.makedirs(log_path, exist_ok=True)
-    return log_path
+        application_path = os.path.dirname(__file__)
+    APP_PATH = application_path
+    _directory = os.path.dirname(application_path)
+    LOG_FILE = os.path.join(application_path, fr'{APP_NAME}_logs\{LOG_FILE}')
+    os.chdir(_directory)
 
-arguments = docopt(usage)
 
-regex = arguments['<regex>']
-days = float(arguments['<time>'])
-check_is_last_of_month = arguments['--exclude-month-end'] or arguments['-e']
+def configure_logging() -> None:
+    if not os.path.exists(os.path.join(APP_PATH, fr'{APP_NAME}_logs')):
+        os.makedirs(os.path.join(APP_PATH, fr'{APP_NAME}_logs'))
+        open(LOG_FILE, 'w').close()
+    logging.basicConfig(
+        filename=LOG_FILE,
+        format="%(asctime)s - " + APP_NAME + " - %(levelname)s - %(message)s",
+        level=logging.INFO,
+    )
+    # Also log to stdout
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
-print(f"Exclude month end was {check_is_last_of_month}")
 
-current_datetime = datetime.now()
-year = current_datetime.year
-month = current_datetime.month
-day = current_datetime.day
-hour = current_datetime.hour
-minute = current_datetime.minute
-second = current_datetime.second
+def is_last_day_of_month(file_path):
+    # Get the last modified time of the file
+    mtime = os.path.getmtime(file_path)
+    modified_date = datetime.fromtimestamp(mtime)
 
-logging_directory = logging_file_directory()
-logging_filename = f"FileCleaner_Log_{year}-{month}-{day}_H{hour}-M{minute}-S{second}.log"
-logging_filename = os.path.join(logging_directory, logging_filename)
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s: %(message)s",
-                    datefmt="%Y-%m-%d %H:%M:%S",  # Custom time format
-                    filename=logging_filename,
-                    filemode='w')
+    # Get the last day of the month
+    last_day = calendar.monthrange(modified_date.year, modified_date.month)[1]
 
-console_handler = logging.StreamHandler()
+    # Check if the modified date is the last day of the month
+    return modified_date.day == last_day
 
-logger = logging.getLogger()
-logger.addHandler(console_handler)
 
-matching_files = glob.glob(regex, recursive = True)
-delete_count = 0
+def find_files_not_last_day_of_month(_expression: str) -> list:
+    no_end_date = []
+    _files = glob(_expression, recursive=True)
+    for _file in _files:
+        if not is_last_day_of_month(_file):
+            no_end_date.append(_file)
+    return no_end_date
 
-for file in matching_files:
-    mtime = os.path.getmtime(file)
-    creation_datetime = datetime.fromtimestamp(mtime)
-    delta_time = current_datetime - creation_datetime
-    
-    if check_is_last_of_month and is_last_day_of_month(creation_datetime):
-        month_number = creation_datetime.month
-        month_name = calendar.month_name[month_number]
-        logger.info(f"Skipped file made at the end of {month_name} - {file}")
-        continue
 
-    if days >= abs(delta_time.days):
-        try:
-            if os.path.isfile(file):
-                os.remove(file)
-            elif os.path.isdir(file):
-                continue
+def remove_files(_files: list, _age: int = 1):
+    deleted_files = 0
+    cutoff_date = datetime.now() - timedelta(days=_age)
+    for _file in _files:
+        if Path(_file).stat().st_mtime < cutoff_date.timestamp():
+            try:
+                os.remove(_file)
+                deleted_files += 1
+                logging.info(f"Removed: {_file}")
+            except OSError:
+                logging.error(f"Error removing: {_file}")
+    if deleted_files > 0:
+        logging.info(f"Deleted {deleted_files} files.")
+    else:
+        logging.info("No files were deleted.")
 
-            delete_count += 1
-            logger.info(f"Deleted {file}")
-        except:
-            logger.error(f"Failed to delete {file}")
 
-if delete_count == 0:
-    logger.info(f"No files were created within {days} days matching the regular expression: {regex}")
-else:
-    logger.info(f"{delete_count} files deleted, created within {days} days, matching the regular expression: {regex}")
-    
-print (f"Log file path: {logging_filename}")
+if __name__ == '__main__':
+    start_time = time.perf_counter()
+    set_current_directory()
+    configure_logging()
+    files = []
+    cmd_args = docopt(__doc__, version=APP_HELP)
+    logging.info(f"{APP_NAME} started.  Parameters: {cmd_args}")
+    expression = cmd_args['<expression>']
+    age = int(cmd_args['<age>'])
+    exclude_last_day = cmd_args['-e']
+    if exclude_last_day:
+        files = find_files_not_last_day_of_month(_expression= expression)
+    else:
+        for file in glob(expression, recursive=True):
+            files.append(file)
+    remove_files(_files=files, _age=age)
+    logging.info(f"Execution complete in: {time.perf_counter() - start_time:0.4f} seconds")
