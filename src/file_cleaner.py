@@ -9,7 +9,7 @@ Usage:
     ACG-FolderClean (-h | --version)
 
 Positional Arguments:
-    <expression>                Directory to search for files.
+    <expression>               Directory to search for files.
     <age>                      Age in number of days.
 
 Options:
@@ -17,27 +17,136 @@ Options:
     -h                          Display this screen.
     --version                   Show version information.
 
-Copyright © 2025 Application Consulting Group, Inc.
+Licensed under the MIT License - see LICENSE file for details.
 """
 
 import calendar
 import logging
 import os
+import re
 import sys
 import time
 from datetime import datetime, timedelta
 from glob import glob
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from typing import Tuple
 
 from docopt import docopt
 
 APP_NAME = 'ACG-FolderClean'
+VERSION = '1.0.0'
 APP_VERSION = '1.0.0'
 APP_YEAR = '2025'
 APP_COPYRIGHT = f'Copyright © {APP_YEAR} Application Consulting Group, Inc.'
 APP_HELP = f'{APP_NAME}\nVersion: {APP_VERSION}\n{APP_COPYRIGHT}'
 LOG_FILE = APP_NAME + '.log'
 APP_PATH = ''
+
+
+def resolve_paths() -> Tuple[str, str, str]:
+    """
+    Resolve application paths for both frozen and non-frozen execution.
+
+    Returns:
+        Tuple of (app_path, source_path, log_file)
+    """
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable (PyInstaller)
+        source_path = os.path.dirname(sys.executable)
+        app_path = getattr(sys, '_MEIPASS', source_path)
+    else:
+        # Running as script
+        source_path = os.path.abspath(os.path.dirname(__file__))
+        app_path = source_path
+
+    # Change to source directory
+    os.chdir(source_path)
+
+    log_file = os.path.join(source_path, f'{APP_NAME}.log')
+    return app_path, source_path, log_file
+
+
+def get_file_version(app_path: str) -> str:
+    """
+    Get version from app_version.txt file if it exists.
+
+    Args:
+        app_path: Path to application directory
+
+    Returns:
+        Version string or VERSION constant
+    """
+    try:
+        version_file = os.path.join(app_path, 'app_version.txt')
+        if os.path.exists(version_file):
+            with open(version_file, 'r') as file:
+                for line in file:
+                    match = re.search(r"FileVersion',\s*'([\d.]+)'", line)
+                    if match:
+                        return match.group(1)
+    except Exception:
+        pass
+    return VERSION
+
+
+def get_year(app_path: str) -> str:
+    """
+    Get copyright year from app_year.txt file if it exists.
+
+    Args:
+        app_path: Path to application directory
+
+    Returns:
+        Year string or current year
+    """
+    try:
+        year_file = os.path.join(app_path, 'app_year.txt')
+        if os.path.exists(year_file):
+            with open(year_file, 'r') as file:
+                return file.read().strip()
+    except Exception:
+        pass
+    return str(datetime.now().year)
+
+
+def setup_logging(log_file: str) -> logging.Logger:
+    """
+    Setup logging with rotation and both file and console handlers.
+
+    Args:
+        log_file: Path to log file
+
+    Returns:
+        Configured logger instance
+    """
+    logger = logging.getLogger(APP_NAME)
+    logger.setLevel(logging.INFO)
+
+    # Remove existing handlers to avoid duplicates
+    logger.handlers.clear()
+
+    # File handler with rotation (keeps 7 days of logs)
+    file_handler = TimedRotatingFileHandler(
+        log_file,
+        when='midnight',
+        backupCount=7,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    )
+
+    # Console handler
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    )
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    return logger
 
 
 def set_current_directory() -> None:
@@ -87,7 +196,9 @@ def find_files_not_last_day_of_month(_expression: str) -> list:
     return no_end_date
 
 
-def remove_files(_files: list, _age: int = 1):
+def remove_files(_files: list, _age: int = 1, logger=None):
+    if logger is None:
+        logger = logging.getLogger(APP_NAME)
     deleted_files = 0
     cutoff_date = datetime.now() - timedelta(days=_age)
     for _file in _files:
@@ -95,22 +206,32 @@ def remove_files(_files: list, _age: int = 1):
             try:
                 os.remove(_file)
                 deleted_files += 1
-                logging.info(f"Removed: {_file}")
+                logger.info(f"Removed: {_file}")
             except OSError:
-                logging.error(f"Error removing: {_file}")
+                logger.error(f"Error removing: {_file}")
     if deleted_files > 0:
-        logging.info(f"Deleted {deleted_files} files.")
+        logger.info(f"Deleted {deleted_files} files.")
     else:
-        logging.info("No files were deleted.")
+        logger.info("No files were deleted.")
 
 
 if __name__ == '__main__':
     start_time = time.perf_counter()
-    set_current_directory()
-    configure_logging()
+
+    # Setup paths and logging first
+    app_path, source_path, log_file = resolve_paths()
+    logger = setup_logging(log_file)
+
+    # Get version info
+    version = get_file_version(app_path)
+    year = get_year(app_path)
+
+    # Log startup information
+    logger.info(f"{APP_NAME} Version: {version} | © {year} Application Consulting Group, Inc.")
+
     files = []
     cmd_args = docopt(__doc__, version=APP_HELP)
-    logging.info(f"{APP_NAME} started.  Parameters: {cmd_args}")
+    logger.info(f"{APP_NAME} started.  Parameters: {cmd_args}")
     expression = cmd_args['<expression>']
     age = int(cmd_args['<age>'])
     exclude_last_day = cmd_args['-e']
@@ -119,5 +240,5 @@ if __name__ == '__main__':
     else:
         for file in glob(expression, recursive=True):
             files.append(file)
-    remove_files(_files=files, _age=age)
-    logging.info(f"Execution complete in: {time.perf_counter() - start_time:0.4f} seconds")
+    remove_files(_files=files, _age=age, logger=logger)
+    logger.info(f"Execution complete in: {time.perf_counter() - start_time:0.4f} seconds")
